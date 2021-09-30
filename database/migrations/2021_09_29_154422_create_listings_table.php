@@ -21,7 +21,7 @@ class CreateListingsTable extends Migration
             $table->integer('quantity');
             $table->string('gender_allowed');
             $table->decimal('price', 13, 2);
-            $table->foreign('owner_id')->constrained('users');
+            $table->foreignId('owner_id')->constrained('users');
             $table->timestamps();
         });
     }
