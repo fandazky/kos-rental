@@ -16,4 +16,8 @@ class Listing extends Model
     public function photos() {
         return $this->belongsToMany(Photo::class);
     }
+
+    public function owner() {
+        return $this->belongsTo(User::class);
+    }
 }

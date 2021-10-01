@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Listing;
 use Illuminate\Http\Request;
 
 class ListingController extends Controller
@@ -17,23 +18,27 @@ class ListingController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
-    public function index()
+    public function index(Request $request)
     {
-        
-        return response()->json([
-            'success' => true,
-            'data' => 'this is list listing api for user id: '.$this->user->id
-        ]);
-    }
+        $listingQuery = Listing::with(['facilities:name,icon_url', 'photos:title,photo_url']);
+        $listingQuery->where('owner_id', '=', $this->user->id);
+        if ($sortBy = $request->query('sort_by')) {
+            $direction = $request->query('sort_type', 'ASC');
+            $listingQuery->orderBy($sortBy, $direction);
+        }
 
-    /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
-     */
-    public function create()
-    {
-        //
+        $total = $listingQuery->count();
+        
+        $page = $request->query('page', 1);
+        $pageSize = $request->query('page_size', 10);
+        $result = $listingQuery->offset(($page-1)* $pageSize)->limit($pageSize)->get();
+        $lastPage = ceil($total/$pageSize);
+
+        return response()->json([
+            'data' => $result,
+            'total' => $total,
+            'has_more' => $lastPage > $page
+        ]);
     }
 
     /**
@@ -57,17 +62,6 @@ class ListingController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit($id)
     {
         //
     }
