@@ -33,6 +33,9 @@ Route::group([
 
 Route::middleware(['api', 'auth:api'])->group(function() {
     Route::group(['prefix' => 'owner', 'middleware' => 'isOwner'], function() {
+        Route::get('/listings', [ListingController::class, 'index']);
         Route::post('/listings', [ListingController::class, 'store']);
+        Route::patch('/listings/{id}', [ListingController::class, 'update']);
+        Route::delete('/listings/{id}', [ListingController::class, 'destroy']);
     });
 });
