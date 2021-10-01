@@ -24,6 +24,7 @@ class ListingOwnerController extends Controller
     public function index(Request $request)
     {
         $listingQuery = Listing::with(['facilities:name,icon_url', 'photos:title,photo_url']);
+        $listingQuery->where('is_active', 1);
         $listingQuery->where('owner_id', '=', $this->user->id);
         if ($sortBy = $request->query('sort_by')) {
             $direction = $request->query('sort_type', 'ASC');
