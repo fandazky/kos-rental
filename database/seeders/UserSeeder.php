@@ -15,10 +15,6 @@ class UserSeeder extends Seeder
      */
     public function run()
     {
-        $adminRoleId = DB::table('roles')->insertGetId([
-            'name' => 'admin',
-        ]);
-
         $ownerRoleId = DB::table('roles')->insertGetId([
             'name' => 'owner',
         ]);
@@ -27,16 +23,16 @@ class UserSeeder extends Seeder
             'name' => 'user',
         ]);
 
-        $userAdmin = new User();
-        $userAdmin->name = 'Administrator';
-        $userAdmin->email = 'admin@email.com';
-        $userAdmin->password = bcrypt('admin');
-        $userAdmin->save();
-        $userAdmin->roles()->attach($adminRoleId);
-
         $userOwner = new User();
         $userOwner->name = 'Kos Owner';
         $userOwner->email = 'owner@email.com';
+        $userOwner->password = bcrypt('owner');
+        $userOwner->save();
+        $userOwner->roles()->attach($ownerRoleId);
+
+        $userOwner = new User();
+        $userOwner->name = 'Kos Owner Dua';
+        $userOwner->email = 'owner2@email.com';
         $userOwner->password = bcrypt('owner');
         $userOwner->save();
         $userOwner->roles()->attach($ownerRoleId);
@@ -45,6 +41,7 @@ class UserSeeder extends Seeder
         $userReguler->name = 'User Reguler';
         $userReguler->email = 'reg.user@email.com';
         $userReguler->password = bcrypt('reguler');
+        $userReguler->credit = 20;
         $userReguler->save();
         $userReguler->roles()->attach($userRoleId);
 
@@ -53,6 +50,7 @@ class UserSeeder extends Seeder
         $userPremium->email = 'premium.user@email.com';
         $userPremium->password = bcrypt('premium');
         $userPremium->is_premium_user = 1;
+        $userPremium->credit = 40;
         $userPremium->save();
         $userPremium->roles()->attach($userRoleId);
     }
