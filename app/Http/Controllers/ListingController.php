@@ -24,6 +24,12 @@ class ListingController extends Controller
     {
         $listingQuery = Listing::with(['facilities:name,icon_url', 'photos:title,photo_url']);
         $listingQuery->where('is_active', 1);
+
+        if ($keyword = $request->query('keyword')) {
+            $listingQuery->whereRaw("title LIKE '%". $keyword ."%'")
+                ->orWhereRaw("address LIKE '%". $keyword ."%'");
+        }
+        
         if ($sortBy = $request->query('sort_by')) {
             $direction = $request->query('sort_type', 'ASC');
             $listingQuery->orderBy($sortBy, $direction);

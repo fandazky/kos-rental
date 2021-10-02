@@ -26,6 +26,12 @@ class ListingOwnerController extends Controller
         $listingQuery = Listing::with(['facilities:name,icon_url', 'photos:title,photo_url']);
         $listingQuery->where('is_active', 1);
         $listingQuery->where('owner_id', '=', $this->user->id);
+
+        if ($keyword = $request->query('keyword')) {
+            $listingQuery->whereRaw("title LIKE '%". $keyword ."%'")
+                ->orWhereRaw("address LIKE '%". $keyword ."%'");
+        }
+
         if ($sortBy = $request->query('sort_by')) {
             $direction = $request->query('sort_type', 'ASC');
             $listingQuery->orderBy($sortBy, $direction);
@@ -237,10 +243,11 @@ class ListingOwnerController extends Controller
             }
 
             $listing->is_active = 0;
+            $listing->save();
 
             return [
                 'statusCode' => 204,
-                'data' => $listing
+                'data' => null
             ];
             
         });
