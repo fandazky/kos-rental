@@ -23,11 +23,12 @@ class ListingController extends Controller
     public function index(Request $request)
     {
         $listingQuery = Listing::with(['facilities:name,icon_url', 'photos:title,photo_url']);
-        $listingQuery->where('is_active', 1);
+        $listingQuery->where('is_active', '=', 1);
 
         if ($keyword = $request->query('keyword')) {
-            $listingQuery->whereRaw("title LIKE '%". $keyword ."%'")
-                ->orWhereRaw("address LIKE '%". $keyword ."%'");
+            $listingQuery->where(function($query) use ($keyword) {
+                $query->whereRaw("title LIKE '%". $keyword ."%' OR address LIKE '%". $keyword ."%'");
+            });
         }
         
         if ($sortBy = $request->query('sort_by')) {
@@ -39,7 +40,9 @@ class ListingController extends Controller
         
         $page = $request->query('page', 1);
         $pageSize = $request->query('page_size', 10);
-        $result = $listingQuery->offset(($page-1)* $pageSize)->limit($pageSize)->get();
+        $listingQuery->offset(($page-1)* $pageSize)->limit($pageSize);
+
+        $result = $listingQuery->get();
         $lastPage = ceil($total/$pageSize);
 
         return response()->json([

@@ -28,8 +28,9 @@ class ListingOwnerController extends Controller
         $listingQuery->where('owner_id', '=', $this->user->id);
 
         if ($keyword = $request->query('keyword')) {
-            $listingQuery->whereRaw("title LIKE '%". $keyword ."%'")
-                ->orWhereRaw("address LIKE '%". $keyword ."%'");
+            $listingQuery->where(function($query) use ($keyword) {
+                $query->whereRaw("title LIKE '%". $keyword ."%' OR address LIKE '%". $keyword ."%'");
+            });
         }
 
         if ($sortBy = $request->query('sort_by')) {
