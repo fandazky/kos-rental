@@ -28,7 +28,7 @@ Route::group([
     Route::post('/login', [AuthController::class, 'login']);
     Route::post('/register', [AuthController::class, 'register']);
     Route::post('/logout', [AuthController::class, 'logout']);
-    Route::get('/user-profile', [AuthController::class, 'userProfile']);    
+    Route::get('/profiles', [AuthController::class, 'userProfile']);    
 });
 
 Route::middleware(['api', 'auth:api'])->group(function() {
