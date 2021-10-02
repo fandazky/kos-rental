@@ -40,10 +40,10 @@ Route::middleware(['api', 'auth:api'])->group(function() {
     });
 });
 
-Route::middleware(['api', 'auth:api'])->group(function() {
-    Route::group(['prefix' => 'user', 'middleware' => 'isUser'], function() {
+Route::middleware(['api'])->group(function() {
+    Route::group(['prefix' => 'user'], function() {
         Route::get('/listings', [ListingController::class, 'index']);
         Route::get('/listings/{id}', [ListingController::class, 'show']);
-        Route::post('/listings/{id}/availabilities', [ListingController::class, 'availability']);
+        Route::post('/listings/{id}/availabilities', [ListingController::class, 'availability'])->middleware('auth:api','isUser');
     });
 });
