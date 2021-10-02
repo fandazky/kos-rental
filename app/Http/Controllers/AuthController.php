@@ -69,22 +69,31 @@ class AuthController extends Controller
         DB::beginTransaction();
         $result = null;
         try {
-            $credit = 20;
-            if (isset($safeRequest['is_premium_user']) && $safeRequest['is_premium_user']) {
-                $credit = 40;
-            }
+            $roleIdList = $safeRequest['roles'];
             $user = User::create(array_merge(
                 $safeRequest,
-                ['password' => bcrypt($request->password), 'credit' => $credit]
+                ['password' => bcrypt($request->password), 'credit' => 0]
             ));
 
-            if ($roleIdList = $safeRequest['roles']) {
-                $roles = Role::whereIn('id', $roleIdList)->get();
-                if (count($roles) !== count($roleIdList)) {
-                    throw new InvalidFormValueException('Some roles id is invalid', 'roles');
-                }
-                $user->roles()->attach($roleIdList);
+            $roles = Role::whereIn('id', $roleIdList)->get();
+            if (count($roles) !== count($roleIdList)) {
+                throw new InvalidFormValueException('Some roles id is invalid', 'roles');
             }
+
+            foreach ($roles as $role) {
+                if ($role->name == 'user') {
+                    $credit = 20;
+                    if (isset($safeRequest['is_premium_user']) && $safeRequest['is_premium_user']) {
+                        $credit = 40;
+                    }
+                    $user->credit = $credit;
+                    $user->save();
+                    break;
+                }
+            }
+
+            $user->roles()->attach($roleIdList);
+            
             $result = $user;
             DB::commit();
         } catch (InvalidFormValueException $e) {
