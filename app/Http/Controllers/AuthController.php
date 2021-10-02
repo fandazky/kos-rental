@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\InvalidFormValueException;
+use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use App\Models\User;
+use Exception;
+use Illuminate\Support\Facades\DB;
 
 class AuthController extends Controller
 {
@@ -24,8 +28,8 @@ class AuthController extends Controller
      */
     public function login(Request $request){
     	$validator = Validator::make($request->all(), [
-            'email' => 'required|email',
-            'password' => 'required|string',
+            'email' => ['required','email'],
+            'password' => ['required','string'],
         ]);
 
         if ($validator->fails()) {
@@ -48,21 +52,59 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => ['required','string','between:2,100'],
             'email' => ['required','string','email','max:100','unique:users'],
-            'password' => ['required','string','confirmed','min:6']
+            'password' => ['required','string','confirmed','min:6'],
+            'roles' => ['required','array'],
+            'roles.*' => ['required','string'],
+            'is_premium_user' => ['nullable','boolean']
         ]);
 
         if($validator->fails()){
-            return response()->json($validator->errors()->toJson(), 400);
+            return response()->json([ 
+                'errors' => $validator->errors()
+            ], 400);
+        }
+        
+        $safeRequest = $validator->validated();
+
+        DB::beginTransaction();
+        $result = null;
+        try {
+            $credit = 20;
+            if (isset($safeRequest['is_premium_user']) && $safeRequest['is_premium_user']) {
+                $credit = 40;
+            }
+            $user = User::create(array_merge(
+                $safeRequest,
+                ['password' => bcrypt($request->password), 'credit' => $credit]
+            ));
+
+            if ($roleIdList = $safeRequest['roles']) {
+                $roles = Role::whereIn('id', $roleIdList)->get();
+                if (count($roles) !== count($roleIdList)) {
+                    throw new InvalidFormValueException('Some roles id is invalid', 'roles');
+                }
+                $user->roles()->attach($roleIdList);
+            }
+            $result = $user;
+            DB::commit();
+        } catch (InvalidFormValueException $e) {
+            DB::rollback();
+            return response()->json([
+                'errors' => [
+                    $e->getFormField() => [
+                        $e->getFieldError()
+                    ]
+                ]
+            ], 422);
+        } catch (Exception $e) {
+            DB::rollback();
+            return response()->json([
+                'message' => 'Unknown Exception'
+            ], 422);
         }
 
-        $user = User::create(array_merge(
-                    $validator->validated(),
-                    ['password' => bcrypt($request->password)]
-                ));
-
         return response()->json([
-            'message' => 'User successfully registered',
-            'user' => $user
+            'data' => $result
         ], 201);
     }
 
@@ -76,15 +118,6 @@ class AuthController extends Controller
         auth()->logout();
 
         return response()->json(['message' => 'User successfully signed out']);
-    }
-
-    /**
-     * Refresh a token.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function refresh() {
-        return $this->createNewToken(auth()->refresh());
     }
 
     /**

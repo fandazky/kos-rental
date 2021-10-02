@@ -198,7 +198,7 @@ class ListingOwnerController extends Controller
             $listing->save();
 
             return [
-                'statusCode' => 204,
+                'statusCode' => 200,
                 'data' => $listing
             ];
             
