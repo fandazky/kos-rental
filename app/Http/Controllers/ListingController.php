@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class ListingController extends Controller
 {
@@ -22,24 +23,55 @@ class ListingController extends Controller
      */
     public function index(Request $request)
     {
+        $validator = Validator::make($request->all(), [
+            'keyword' => ['nullable','string'],
+            'sort_by' => ['nullable','string',Rule::in(['price'])],
+            'sort_type' => ['nullable','string',Rule::in(['ASC', 'DESC'])],
+            'min_price' => ['nullable','numeric'],
+            'max_price' => ['nullable','numeric'],
+            'page' => ['nullable', 'numeric'],
+            'page_size' => ['nullable','numeric']
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'errors' => $validator->errors()
+            ], 422);
+        }
+
+        $safeRequest = $validator->validated();
+        
         $listingQuery = Listing::with(['facilities:name,icon_url', 'photos:title,photo_url']);
         $listingQuery->where('is_active', '=', 1);
 
-        if ($keyword = $request->query('keyword')) {
+        if (isset($safeRequest['keyword'])) {
+            $keyword = $safeRequest['keyword'];
             $listingQuery->where(function($query) use ($keyword) {
-                $query->whereRaw("title LIKE '%". $keyword ."%' OR address LIKE '%". $keyword ."%'");
+                $query->where('title', 'LIKE', '%'.$keyword.'%')
+                    ->orWhere('address', 'LIKE', '%'.$keyword.'%');
             });
         }
         
-        if ($sortBy = $request->query('sort_by')) {
+        if (isset($safeRequest['sort_by'])) {
+            $sortBy = $safeRequest['sort_by'];
             $direction = $request->query('sort_type', 'ASC');
             $listingQuery->orderBy($sortBy, $direction);
         }
 
+        if (isset($safeRequest['min_price'])) {
+            $minPrice = $safeRequest['min_price'];
+            $listingQuery->where('price', '>=', $minPrice);
+        }
+
+        if (isset($safeRequest['max_price'])) {
+            $maxPrice = $safeRequest['max_price'];
+            $listingQuery->where('price', '<=', $maxPrice);
+        }
+
         $total = $listingQuery->count();
         
-        $page = $request->query('page', 1);
-        $pageSize = $request->query('page_size', 10);
+        $page = isset($safeRequest['page']) ? $safeRequest['page'] : 1;
+        $pageSize = isset($safeRequest['page_size']) ? $safeRequest['page_size'] :10;
         $listingQuery->offset(($page-1)* $pageSize)->limit($pageSize);
 
         $result = $listingQuery->get();
@@ -48,7 +80,8 @@ class ListingController extends Controller
         return response()->json([
             'data' => $result,
             'total' => $total,
-            'has_more' => $lastPage > $page
+            'has_more' => $lastPage > $page,
+            'sql' => $listingQuery->toSql()
         ]);
     }
 

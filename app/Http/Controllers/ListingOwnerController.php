@@ -78,7 +78,6 @@ class ListingOwnerController extends Controller
         }
 
         $safeRequest = $validator->validated();
-        
 
         $result = DB::transaction(function () use ($safeRequest) {
             $listing = new Listing();
